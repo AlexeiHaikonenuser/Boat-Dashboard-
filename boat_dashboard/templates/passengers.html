@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('passengers', session.get('language', 'en')) }}</h2>
+
+    {% if current_trip %}
+    <div class="alert alert-primary border-0 shadow-sm">
+        <strong>{{ get_text('current_trip', session.get('language', 'en')) }}:</strong>
+        {{ current_trip.title or get_text('untitled_trip', session.get('language', 'en')) }}
+    </div>
+    {% endif %}
+
+    <!-- Master List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('master_passenger_list', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <!-- Add new passenger -->
+            <form method="POST" class="row g-2 mb-4">
+                <div class="col-md-8">
+                    <input type="text" name="name" class="form-control"
+                           placeholder="{{ get_text('add_new_passenger_name', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" name="add_master" class="btn btn-primary w-100">
+                        {{ get_text('add_to_master_list', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+
+            {% if master_list %}
+            <div class="list-group list-group-flush">
+                {% for p in master_list %}
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <span>{{ p.name }}</span>
+                    <div class="d-flex gap-1">
+                        {% if current_trip %}
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="passenger_id" value="{{ p.id }}">
+                            <button type="submit" name="add_to_trip" class="btn btn-outline-success btn-sm">
+                                {{ get_text('add_to_current_trip', session.get('language', 'en')) }}
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" class="d-inline"
+                              onsubmit="return confirm('{{ get_text('delete_from_master_list', session.get('language', 'en')) }} {{ p.name }}?')">
+                            <input type="hidden" name="passenger_id" value="{{ p.id }}">
+                            <button type="submit" name="delete_master" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">{{ get_text('no_passengers_yet', session.get('language', 'en')) }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('index') }}" class="btn btn-light">
+            {{ get_text('back_to_dashboard', session.get('language', 'en')) }}
+        </a>
+    </div>
+</div>
+{% endblock %}

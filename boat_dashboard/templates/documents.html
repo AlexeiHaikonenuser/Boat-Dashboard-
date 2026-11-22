@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4 text-center">📄 {{ get_text('documents', session.get('language', 'en')) }}</h1>
+
+    <!-- Upload form -->
+    <div class="card mb-5">
+        <div class="card-header bg-primary text-white">
+            <h5>+ {{ get_text('add_document', session.get('language', 'en')) }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('upload_document') }}" enctype="multipart/form-data" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="title" class="form-control"
+                           placeholder="{{ get_text('document_title', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="Registration">{{ get_text('registration', session.get('language', 'en')) }}</option>
+                        <option value="Insurance">{{ get_text('insurance', session.get('language', 'en')) }}</option>
+                        <option value="Manual">{{ get_text('manual', session.get('language', 'en')) }}</option>
+                        <option value="Certificate">{{ get_text('certificate', session.get('language', 'en')) }}</option>
+                        <option value="Other" selected>{{ get_text('other', session.get('language', 'en')) }}</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="date" name="expiry_date" class="form-control"
+                           title="{{ get_text('expiry_date', session.get('language', 'en')) }}">
+                </div>
+                <div class="col-12">
+                    <textarea name="notes" class="form-control" rows="2"
+                              placeholder="{{ get_text('notes_optional', session.get('language', 'en')) }}"></textarea>
+                </div>
+                <div class="col-md-8">
+                    <input type="file" name="file" class="form-control" required
+                           accept=".pdf,.jpg,.jpeg,.png,.webp,.gpx">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success w-100">
+                        {{ get_text('upload', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document list -->
+    {% if documents %}
+        {% for cat in categories %}
+        <h4 class="mt-4 mb-3">{{ cat }}</h4>
+        <div class="list-group mb-4">
+            {% for doc in documents if doc.category == cat %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ doc.title }}</strong>
+                    {% if doc.expiry_date %}
+                        <span class="badge bg-warning text-dark ms-2">
+                            {{ get_text('until', session.get('language', 'en')) }} {{ doc.expiry_date }}
+                        </span>
+                    {% endif %}
+                    {% if doc.notes %}<br><small class="text-muted">{{ doc.notes }}</small>{% endif %}
+                </div>
+                <div>
+                    <a href="{{ url_for('static', filename=doc.file_path) }}"
+                       class="btn btn-sm btn-outline-primary" target="_blank">
+                        {{ get_text('open', session.get('language', 'en')) }}
+                    </a>
+                    <form method="POST" action="{{ url_for('delete_document', doc_id=doc.id) }}" class="d-inline"
+                          onsubmit="return confirm('{{ get_text('delete_document_confirm', session.get('language', 'en')) }}')">
+                        <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-center text-muted py-5">{{ get_text('no_documents', session.get('language', 'en')) }}</p>
+    {% endif %}
+</div>
+{% endblock %}

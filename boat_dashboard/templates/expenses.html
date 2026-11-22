@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('expenses', session.get('language', 'en')) }}</h2>
+
+    <!-- Total -->
+    <div class="card border-0 shadow-sm mb-4 text-center">
+        <div class="card-body py-4">
+            <div class="text-muted small">{{ get_text('total_spent', session.get('language', 'en')) }}</div>
+            <div class="display-5 fw-bold text-primary">{{ total|round(2) }} €</div>
+        </div>
+    </div>
+
+    <!-- Add Expense -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_expense', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" class="row g-2">
+                <div class="col-md-3">
+                    <input type="date" name="expense_date" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select" id="categorySelect">
+                        <option value="Repairs">{{ get_text('repairs', session.get('language', 'en')) }}</option>
+                        <option value="Maintenance">{{ get_text('maintenance', session.get('language', 'en')) }}</option>
+                        <option value="Parts">{{ get_text('parts', session.get('language', 'en')) }}</option>
+                        <option value="Fuel">{{ get_text('fuel', session.get('language', 'en')) }}</option>
+                        <option value="Insurance">{{ get_text('insurance', session.get('language', 'en')) }}</option>
+                        <option value="Upgrade">{{ get_text('upgrade', session.get('language', 'en')) }}</option>
+                        <option value="Other" selected>{{ get_text('other', session.get('language', 'en')) }}</option>
+                        {% for cat in categories %}
+                            {% if cat not in ['Repairs','Maintenance','Parts','Fuel','Insurance','Upgrade','Other'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-link btn-sm p-0 mt-1" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                        + {{ get_text('custom_category', session.get('language', 'en')) }}
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" name="amount" class="form-control"
+                           placeholder="{{ get_text('amount', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="description" class="form-control"
+                           placeholder="{{ get_text('description', session.get('language', 'en')) }}">
+                </div>
+                <div class="col-12 mt-2">
+                    <input type="file" name="receipt" class="form-control" accept="image/*,.pdf">
+                </div>
+                <div class="col-12">
+                    <textarea name="notes" class="form-control" rows="2"
+                              placeholder="{{ get_text('notes', session.get('language', 'en')) }}"></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" name="add_expense" class="btn btn-primary">{{ get_text('save', session.get('language', 'en')) }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expenses List -->
+    <div class="mb-4">
+        <h5 class="mb-3">{{ get_text('expenses_list', session.get('language', 'en')) }}</h5>
+        {% if expenses %}
+            {% for cat in categories %}
+            {% set cat_expenses = expenses|selectattr('category', 'equalto', cat)|list %}
+            {% if cat_expenses %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold text-secondary">
+            {% if cat in ['Repairs','Maintenance','Parts','Fuel','Insurance','Upgrade','Other'] %}
+                {{ get_text(cat|lower, session.get('language', 'en')) }}
+            {% else %}
+                {{ cat }}
+            {% endif %}
+        </div>
+        <div class="text-primary fw-bold">
+            {{ cat_expenses|sum(attribute='amount')|round(2) }} €
+        </div>
+    </div>
+
+    {% for e in cat_expenses %}
+    <div class="border rounded mb-2 p-3">
+        <!-- Header: click toggles open/close -->
+        <div class="d-flex justify-content-between align-items-center"
+             style="cursor:pointer;"
+             onclick="document.getElementById('details{{ e.id }}').classList.toggle('show')">
+            <span class="fw-medium">{{ e.description or get_text('no_description', session.get('language', 'en')) }}</span>
+            <span class="text-muted small">{{ e.amount|round(2) }} €</span>
+        </div>
+
+        <!-- Details: clicks inside do not close -->
+        <div class="collapse mt-3" id="details{{ e.id }}"
+             onclick="event.stopPropagation();">
+            <hr class="my-2">
+            <div class="small text-muted mb-1">{{ e.expense_date | ddmmyyyy }}</div>
+            <div class="mb-2" style="user-select:text;">
+                <strong>{{ get_text('notes', session.get('language', 'en')) }}:</strong><br>
+                {{ e.notes or '—' }}
+            </div>
+            {% if e.receipt_path %}
+            <a href="{{ url_for('static', filename=e.receipt_path) }}" target="_blank"
+               class="btn btn-sm btn-outline-secondary"
+               onclick="event.stopPropagation();">
+                📄 {{ get_text('view_receipt', session.get('language', 'en')) }}
+            </a>
+            {% endif %}
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-primary me-1" type="button"
+                        data-id="{{ e.id }}"
+                        data-date="{{ e.expense_date }}"
+                        data-category="{{ e.category|e }}"
+                        data-description="{{ e.description|e }}"
+                        data-amount="{{ e.amount }}"
+                        data-notes="{{ e.notes|e }}"
+                        data-receipt="{{ e.receipt_path or '' }}"
+                        onclick="event.stopPropagation(); editExpense(this)">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <form method="POST" class="d-inline"
+                      onsubmit="event.stopPropagation(); return confirm('Delete this expense?')">
+                    <input type="hidden" name="expense_id" value="{{ e.id }}">
+                    <button type="submit" name="delete_expense" class="btn btn-sm btn-outline-danger"
+                            onclick="event.stopPropagation();">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+            {% endif %}
+            {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-5">
+            {{ get_text('no_expenses_yet', session.get('language', 'en')) }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Custom category modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ get_text('add_custom_category', session.get('language', 'en')) }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="newCategoryName" class="form-control"
+                           placeholder="{{ get_text('category_name_placeholder', session.get('language', 'en')) }}">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                    <button type="button" class="btn btn-primary" onclick="addNewCategory()">{{ get_text('add', session.get('language', 'en')) }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit modal -->
+    <div class="modal fade" id="editExpenseModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ get_text('edit_expense', session.get('language', 'en')) }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="expense_id" id="edit_expense_id">
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('date', session.get('language', 'en')) }}</label>
+                            <input type="date" name="expense_date" id="edit_date" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('category', session.get('language', 'en')) }}</label>
+                            <select name="category" id="edit_category" class="form-select">
+                                <option value="Repairs">{{ get_text('repairs', session.get('language', 'en')) }}</option>
+                                <option value="Maintenance">{{ get_text('maintenance', session.get('language', 'en')) }}</option>
+                                <option value="Parts">{{ get_text('parts', session.get('language', 'en')) }}</option>
+                                <option value="Fuel">{{ get_text('fuel', session.get('language', 'en')) }}</option>
+                                <option value="Insurance">{{ get_text('insurance', session.get('language', 'en')) }}</option>
+                                <option value="Upgrade">{{ get_text('upgrade', session.get('language', 'en')) }}</option>
+                                <option value="Other">{{ get_text('other', session.get('language', 'en')) }}</option>
+                                {% for cat in categories %}
+                                    {% if cat not in ['Repairs','Maintenance','Parts','Fuel','Insurance','Upgrade','Other'] %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('amount', session.get('language', 'en')) }}</label>
+                            <input type="number" step="0.01" name="amount" id="edit_amount" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('description', session.get('language', 'en')) }}</label>
+                            <input type="text" name="description" id="edit_description" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('notes', session.get('language', 'en')) }}</label>
+                            <textarea name="notes" id="edit_notes" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ get_text('receipt', session.get('language', 'en')) }}</label>
+                            <div id="current_receipt_info" class="mb-2"></div>
+                            <input type="file" name="receipt" class="form-control" accept="image/*,.pdf">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" name="remove_receipt" value="1" id="removeReceipt">
+                                <label class="form-check-label" for="removeReceipt">
+                                    {{ get_text('remove_current_receipt', session.get('language', 'en')) }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                        <button type="submit" name="edit_expense" class="btn btn-primary">{{ get_text('save_changes', session.get('language', 'en')) }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function addNewCategory() {
+        const name = document.getElementById('newCategoryName').value.trim();
+        if (name) {
+            const select = document.getElementById('categorySelect');
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+            select.value = name;
+            const editSelect = document.getElementById('edit_category');
+            const editOpt = document.createElement('option');
+            editOpt.value = name;
+            editOpt.textContent = name;
+            editSelect.appendChild(editOpt);
+            bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+            document.getElementById('newCategoryName').value = '';
+        }
+    }
+    function editExpense(btn) {
+        const id = btn.dataset.id;
+        const date = btn.dataset.date;
+        const category = btn.dataset.category;
+        const description = btn.dataset.description;
+        const amount = btn.dataset.amount;
+        const notes = btn.dataset.notes;
+        const receiptPath = btn.dataset.receipt;
+        document.getElementById('edit_expense_id').value = id;
+        document.getElementById('edit_date').value = date;
+        const editSelect = document.getElementById('edit_category');
+        let found = false;
+        for (let opt of editSelect.options) {
+            if (opt.value === category) {
+                found = true;
+                break;
+            }
+        }
+        if (!found && category) {
+            const opt = document.createElement('option');
+            opt.value = category;
+            opt.textContent = category;
+            editSelect.appendChild(opt);
+        }
+        editSelect.value = category;
+        document.getElementById('edit_description').value = description;
+        document.getElementById('edit_amount').value = amount;
+        document.getElementById('edit_notes').value = notes;
+        document.getElementById('removeReceipt').checked = false;
+        const info = document.getElementById('current_receipt_info');
+        const noReceiptText = "{{ get_text('no_receipt_attached', session.get('language', 'en')) }}";
+        const currentText = "{{ get_text('current', session.get('language', 'en')) }}";
+        const viewText = "{{ get_text('view', session.get('language', 'en')) }}";
+        if (receiptPath) {
+            info.innerHTML = `<small class="text-muted">${currentText}: <a href="/static/${receiptPath}" target="_blank">${viewText}</a></small>`;
+        } else {
+            info.innerHTML = `<small class="text-muted">${noReceiptText}</small>`;
+        }
+        new bootstrap.Modal(document.getElementById('editExpenseModal')).show();
+    }
+    </script>
+</div>
+{% endblock %}

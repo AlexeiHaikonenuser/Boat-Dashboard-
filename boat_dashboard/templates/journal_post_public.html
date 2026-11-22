@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ trip.title or 'Post' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #fafafa; }
+        .thumb {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            cursor: pointer;
+            opacity: 0.65;
+            transition: 0.2s;
+            border-radius: 6px;
+            border: 2px solid transparent;
+        }
+        .thumb:hover, .thumb.active { opacity: 1; border-color: #222; }
+        .main-image {
+            width: 100%;
+            max-height: 72vh;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #eee;
+            cursor: pointer;
+        }
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gallery-nav:hover { background: rgba(0,0,0,0.75); }
+        .gallery-nav.prev { left: 12px; }
+        .gallery-nav.next { right: 12px; }
+        .main-wrapper { position: relative; }
+    </style>
+</head>
+<body>
+<div class="container py-4" style="max-width: 960px;">
+    <a href="/{{ boat_slug }}/journal" class="btn btn-outline-secondary btn-sm mb-4">← Back</a>
+
+    {% if trip.images %}
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="d-flex flex-column gap-2" id="thumbs">
+                {% for img in trip.images %}
+                <img src="/static/{{ img.image_path }}"
+                     class="thumb {% if loop.first %}active{% endif %}"
+                     data-index="{{ loop.index0 }}"
+                     onclick="goTo({{ loop.index0 }})">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-10">
+            <div class="main-wrapper">
+                <button class="gallery-nav prev" onclick="prevImg()">‹</button>
+                <img id="mainImg" src="/static/{{ trip.images[0].image_path }}" class="main-image" onclick="nextImg()">
+                <button class="gallery-nav next" onclick="nextImg()">›</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <h1 class="fw-bold mb-2">{{ trip.title or 'Untitled' }}</h1>
+    <div class="text-muted mb-4">{{ trip.start_time | ddmmyyyy }}</div>
+
+    {% if trip.notes %}
+    <div style="white-space: pre-wrap; line-height: 1.75; font-size: 1.05rem;">{{ trip.notes }}</div>
+    {% endif %}
+
+    <hr class="my-4">
+    <h4 class="mb-3">Comments</h4>
+    {% if request.args.get('pending') %}
+    <div class="alert alert-success">Your comment was sent and will appear after it is approved.</div>
+    {% endif %}
+    {% if comments %}
+        {% for c in comments %}
+        <div class="border-bottom py-2">
+            <strong>{{ c.author_name }}</strong>
+            <span class="text-muted small">{{ c.created_at | ddmmyyyy }}</span>
+            <div style="white-space: pre-wrap;">{{ c.content }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No comments yet.</p>
+    {% endif %}
+
+    {% if trip.allow_comments %}
+    <form method="POST" class="mt-3">
+        <div class="mb-2">
+            <input type="text" name="author_name" class="form-control" placeholder="Your name" maxlength="80" required>
+        </div>
+        <div class="mb-2">
+            <textarea name="content" class="form-control" rows="3" placeholder="Write a comment…" maxlength="2000" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+    {% endif %}
+</div>
+
+<script>
+const images = [
+    {% for img in trip.images %}
+    "{{ img.image_path }}",
+    {% endfor %}
+];
+let current = 0;
+
+function goTo(index) {
+    if (index < 0 || index >= images.length) return;
+    current = index;
+    document.getElementById('mainImg').src = '/static/' + images[current];
+    document.querySelectorAll('.thumb').forEach((t, i) => {
+        t.classList.toggle('active', i === current);
+    });
+}
+function prevImg() { goTo(current <= 0 ? images.length - 1 : current - 1); }
+function nextImg() { goTo(current >= images.length - 1 ? 0 : current + 1); }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') prevImg();
+    if (e.key === 'ArrowRight') nextImg();
+});
+</script>
+</body>
+</html>

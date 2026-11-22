@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('tips_notes', session.get('language', 'en')) }}</h2>
+
+    <!-- Add New Tip -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_new_tip', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" name="title" class="form-control"
+                               placeholder="{{ get_text('tip_title_placeholder', session.get('language', 'en')) }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="category" class="form-select" id="categorySelect">
+                            <option value="Safety">{{ get_category_text('Safety', session.get('language', 'en')) }}</option>
+                            <option value="Navigation">{{ get_category_text('Navigation', session.get('language', 'en')) }}</option>
+                            <option value="Maintenance">{{ get_category_text('Maintenance', session.get('language', 'en')) }}</option>
+                            <option value="On Board">{{ get_category_text('On Board', session.get('language', 'en')) }}</option>
+                            <option value="Other" selected>{{ get_category_text('Other', session.get('language', 'en')) }}</option>
+                            {% for cat in categories %}
+                                {% if cat not in ['Safety','Navigation','Maintenance','On Board','Other'] %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-outline-secondary w-100"
+                                data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                            <i class="bi bi-plus me-1"></i> {{ get_text('new_category', session.get('language', 'en')) }}
+                        </button>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <textarea name="content" class="form-control" rows="4"
+                                  placeholder="{{ get_text('write_tip_placeholder', session.get('language', 'en')) }}"></textarea>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <label class="form-label small text-muted">{{ get_text('attach_images', session.get('language', 'en')) }}</label>
+                        <input type="file" name="files" class="form-control" multiple accept="image/*">
+                    </div>
+                    <div class="col-12 mt-2">
+                        <button type="submit" name="add_tip" class="btn btn-primary w-100">
+                            {{ get_text('save_tip', session.get('language', 'en')) }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tips List -->
+    {% if tips %}
+        {% for cat in categories %}
+        {% set cat_tips = tips|selectattr('category', 'equalto', cat)|list %}
+        {% if cat_tips %}
+        <div class="mb-4">
+            <div class="fw-semibold text-secondary mb-2">
+                {{ get_category_text(cat, session.get('language', 'en')) }}
+            </div>
+
+            {% for tip in cat_tips %}
+            <div class="border rounded mb-2 p-3">
+                <!-- Header: click toggles open/close -->
+                <div class="d-flex justify-content-between align-items-center"
+                     style="cursor:pointer;"
+                     onclick="document.getElementById('details{{ tip.id }}').classList.toggle('show')">
+                    <span class="fw-medium">{{ tip.title }}</span>
+                    <span class="text-muted small">{{ tip.created_at | ddmmyyyy }}</span>
+                </div>
+
+                <!-- Details: clicks inside do not close -->
+                <div class="collapse mt-3" id="details{{ tip.id }}"
+                     onclick="event.stopPropagation();">
+                    <hr class="my-2">
+                    <div class="mb-2" style="user-select:text; white-space: pre-wrap;">
+                        {{ tip.content or '—' }}
+                    </div>
+
+                    {% if tip_files.get(tip.id) %}
+                    <div class="mt-3">
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for file in tip_files.get(tip.id, []) %}
+                                {% if file.file_path %}
+                                <div class="position-relative">
+                                    <img src="/static/{{ file.file_path }}"
+                                         class="rounded"
+                                         style="height: 100px; width: 140px; object-fit: cover; cursor: pointer;"
+                                         onclick="event.stopPropagation(); showFullImage('/static/{{ file.file_path }}')">
+                                    <form method="POST" action="{{ url_for('delete_tip_file', file_id=file.id) }}"
+                                          class="position-absolute top-0 end-0"
+                                          onsubmit="event.stopPropagation(); return confirm('Delete this image?')">
+                                        <button type="submit" class="btn btn-danger btn-sm rounded-circle p-0"
+                                                style="width: 22px; height: 22px; line-height: 1; font-size: 14px;"
+                                                onclick="event.stopPropagation();">
+                                            ×
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm edit-btn"
+                                data-id="{{ tip.id }}"
+                                data-title="{{ tip.title }}"
+                                data-category="{{ tip.category }}"
+                                data-content="{{ tip.content }}"
+                                onclick="event.stopPropagation();">
+                            <i class="bi bi-pencil me-1"></i> {{ get_text('edit', session.get('language', 'en')) }}
+                        </button>
+                        <form method="POST" action="{{ url_for('tips') }}" class="d-inline"
+                              onsubmit="event.stopPropagation(); return confirm('Delete this tip?')">
+                            <input type="hidden" name="tip_id" value="{{ tip.id }}">
+                            <input type="hidden" name="delete_tip" value="1">
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="event.stopPropagation();">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    {% else %}
+        <p class="text-center text-muted py-5">{{ get_text('no_tips_yet', session.get('language', 'en')) }}</p>
+    {% endif %}
+</div>
+
+<!-- Add New Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ get_text('add_new_category', session.get('language', 'en')) }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="newCategoryName" class="form-control"
+                       placeholder="{{ get_text('category_name_placeholder', session.get('language', 'en')) }}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                <button type="button" class="btn btn-primary" onclick="addNewCategory()">{{ get_text('add_category', session.get('language', 'en')) }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Tip Modal -->
+<div class="modal fade" id="editTipModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ get_text('edit_tip', session.get('language', 'en')) }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tips') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="tip_id" id="edit_tip_id">
+                    <div class="mb-3">
+                        <label class="form-label">{{ get_text('title', session.get('language', 'en')) }}</label>
+                        <input type="text" name="title" id="edit_title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ get_text('category', session.get('language', 'en')) }}</label>
+                        <select name="category" id="edit_category" class="form-select">
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ get_category_text(cat, session.get('language', 'en')) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ get_text('content_notes', session.get('language', 'en')) }}</label>
+                        <textarea name="content" id="edit_content" class="form-control" rows="5"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ get_text('add_more_images', session.get('language', 'en')) }}</label>
+                        <input type="file" name="files" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">{{ get_text('you_can_add_more_photos', session.get('language', 'en')) }}</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                    <button type="submit" class="btn btn-primary">{{ get_text('save_changes', session.get('language', 'en')) }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Full Image Modal -->
+<div class="modal fade" id="fullImageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2 pt-0 text-center">
+                <img id="fullImage" src="" class="img-fluid rounded" style="max-height: 80vh;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addNewCategory() {
+    const name = document.getElementById('newCategoryName').value.trim();
+    if (name) {
+        const select = document.getElementById('categorySelect');
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+        select.value = name;
+        bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+        document.getElementById('newCategoryName').value = '';
+    }
+}
+function showFullImage(src) {
+    document.getElementById('fullImage').src = src;
+    new bootstrap.Modal(document.getElementById('fullImageModal')).show();
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('edit_tip_id').value = this.getAttribute('data-id');
+            document.getElementById('edit_title').value = this.getAttribute('data-title') || '';
+            document.getElementById('edit_category').value = this.getAttribute('data-category') || 'Other';
+            document.getElementById('edit_content').value = this.getAttribute('data-content') || '';
+            new bootstrap.Modal(document.getElementById('editTipModal')).show();
+        });
+    });
+});
+</script>
+{% endblock %}

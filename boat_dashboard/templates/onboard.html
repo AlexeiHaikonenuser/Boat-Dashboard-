@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('onboard_checklist', session.get('language', 'en')) }}</h2>
+
+    <!-- Add New Item -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_new_item', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <input type="text" name="new_item" class="form-control"
+                           placeholder="{{ get_text('item_name_placeholder', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-4">
+                    <select name="category" class="form-select" id="categorySelect">
+                        <option value="Safety">{{ get_category_text('Safety', session.get('language', 'en')) }}</option>
+                        <option value="Tools">{{ get_category_text('Tools', session.get('language', 'en')) }}</option>
+                        <option value="Navigation">{{ get_category_text('Navigation', session.get('language', 'en')) }}</option>
+                        <option value="Galley">{{ get_category_text('Galley', session.get('language', 'en')) }}</option>
+                        <option value="Deck">{{ get_category_text('Deck', session.get('language', 'en')) }}</option>
+                        <option value="Other" selected>{{ get_category_text('Other', session.get('language', 'en')) }}</option>
+                        {% for cat in categories %}
+                            {% if cat not in ['Safety','Tools','Navigation','Galley','Deck','Other'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" name="add_item" class="btn btn-primary w-100">
+                        {{ get_text('add_item', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+            <button class="btn btn-outline-secondary btn-sm mt-3" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-plus me-1"></i> {{ get_text('add_new_category', session.get('language', 'en')) }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Items by Category -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('items_on_board', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            {% if onboard_items %}
+                {% for category in categories %}
+                <h6 class="mt-4 mb-3 text-muted border-bottom pb-2">{{ get_category_text(category, session.get('language', 'en')) }}</h6>
+                <div class="row g-2 mb-4">
+                    {% for item in onboard_items if item.category == category %}
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 border rounded">
+                            <span>{{ item.name }}</span>
+                            <form method="POST" action="{{ url_for('delete_onboard', item_id=item.id) }}"
+                                  onsubmit="return confirm('{{ get_text('delete_confirm', session.get('language', 'en')) }} {{ item.name }}?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-center text-muted py-5">{{ get_text('no_items_yet', session.get('language', 'en')) }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add New Category -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ get_text('add_new_category', session.get('language', 'en')) }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="newCategoryName" class="form-control"
+                       placeholder="{{ get_text('category_name_placeholder', session.get('language', 'en')) }}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                <button type="button" class="btn btn-primary" onclick="addNewCategory()">{{ get_text('add_category', session.get('language', 'en')) }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addNewCategory() {
+    const name = document.getElementById('newCategoryName').value.trim();
+    if (name) {
+        const select = document.getElementById('categorySelect');
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+        select.value = name;
+        bootstrap.Modal.getInstance(document.getElementById('addCategoryModal')).hide();
+        document.getElementById('newCategoryName').value = '';
+    }
+}
+</script>
+{% endblock %}

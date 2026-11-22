@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">{{ get_text('motor_history', session.get('language', 'en')) }}</h2>
+        <a href="{{ url_for('add_motor_run') }}" class="btn btn-primary btn-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> {{ get_text('add_manual_motor_run', session.get('language', 'en')) }}
+        </a>
+    </div>
+
+    {% if history %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">{{ get_text('start_time', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('end_time', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('duration', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('notes', session.get('language', 'en')) }}</th>
+                            <th class="text-end pe-4">{{ get_text('actions', session.get('language', 'en')) }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td class="ps-4">
+                                {{ entry.start_time | ddmmyyyy }}
+                                <small class="text-muted d-block">{{ entry.start_time[11:16] if entry.start_time else '' }}</small>
+                            </td>
+                            <td>
+                                {{ entry.end_time | ddmmyyyy }}
+                                <small class="text-muted d-block">{{ entry.end_time[11:16] if entry.end_time else '' }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary">
+                                    {% if entry.duration_hours < 0.5 %}
+                                        {{ (entry.duration_hours * 60)|round(0) }} min
+                                    {% else %}
+                                        {{ entry.duration_hours|round(2) }} h
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-muted small">{{ entry.notes or '—' }}</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-outline-secondary btn-sm me-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#noteModal"
+                                        onclick="editNote({{ entry.id }}, `{{ entry.notes or '' }}`)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="POST" action="{{ url_for('delete_motor_run', run_id=entry.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('{{ get_text('delete_motor_run_confirm', session.get('language', 'en')) }}')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-speedometer2 display-1 text-muted"></i>
+        <h4 class="mt-3 text-muted">{{ get_text('no_motor_history_yet', session.get('language', 'en')) }}</h4>
+        <p class="text-muted">{{ get_text('add_first_motor_run', session.get('language', 'en')) }}</p>
+        <a href="{{ url_for('add_motor_run') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-lg me-1"></i> {{ get_text('add_first_motor_run', session.get('language', 'en')) }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal for editing note -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ get_text('edit_note', session.get('language', 'en')) }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="" id="noteForm">
+                <div class="modal-body">
+                    <input type="hidden" name="run_id" id="modal_run_id">
+                    <textarea name="notes" id="modal_notes" class="form-control" rows="4"
+                              placeholder="{{ get_text('motor_run_notes_placeholder', session.get('language', 'en')) }}"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">{{ get_text('cancel', session.get('language', 'en')) }}</button>
+                    <button type="submit" class="btn btn-primary">{{ get_text('save_note', session.get('language', 'en')) }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editNote(runId, currentNotes) {
+    document.getElementById('modal_run_id').value = runId;
+    document.getElementById('modal_notes').value = currentNotes;
+    document.getElementById('noteForm').action = `/motor_history/edit/${runId}`;
+}
+</script>
+{% endblock %}

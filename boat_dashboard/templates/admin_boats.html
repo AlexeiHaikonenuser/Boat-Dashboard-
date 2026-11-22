@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('boat_management_admin', session.get('language', 'en')) }}</h2>
+
+    <!-- Create New Boat -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('create_new_boat', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('create_boat') }}" class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" name="name" class="form-control"
+                           placeholder="{{ get_text('boat_name', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="captain" class="form-control"
+                           placeholder="{{ get_text('captain_name', session.get('language', 'en')) }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        {{ get_text('create_boat', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Boats List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('existing_boats', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="accordion" id="boatsAccordion">
+                {% for boat in boats %}
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed bg-white" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#boat{{ boat.id }}">
+                            <strong>{{ boat.name }}</strong>
+                            <small class="ms-3 text-muted">ID: {{ boat.id }}</small>
+                        </button>
+                    </h2>
+                    <div id="boat{{ boat.id }}" class="accordion-collapse collapse" data-bs-parent="#boatsAccordion">
+                        <div class="accordion-body">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <div class="text-muted small">{{ get_text('captain', session.get('language', 'en')) }}</div>
+                                    <div>{{ boat.captain or get_text('unknown', session.get('language', 'en')) }}</div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('export_boat', boat_id=boat.id) }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-download me-1"></i> {{ get_text('export_boat', session.get('language', 'en')) }}
+                                    </a>
+                                    <form method="POST" action="{{ url_for('delete_boat', boat_id=boat.id) }}" class="d-inline"
+                                          onsubmit="return confirm('{{ get_text('delete_boat_confirm', session.get('language', 'en')) }} {{ boat.name }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash me-1"></i> {{ get_text('delete_boat', session.get('language', 'en')) }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Sensor Enable -->
+                            <form method="POST" action="{{ url_for('update_boat_sensors', boat_id=boat.id) }}" class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="sensor_enabled" id="sensor_{{ boat.id }}" value="1"
+                                           {% if boat.sensor_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="sensor_{{ boat.id }}">
+                                        Show sensor data on main page
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary mt-2">Save</button>
+                            </form>
+
+                            <!-- Sensor Secret -->
+                            <div class="mb-3">
+                                <form method="POST" action="{{ url_for('update_boat_sensor_secret') }}">
+                                    <input type="hidden" name="boat_id" value="{{ boat.id }}">
+                                    <label class="form-label">Sensor Secret</label>
+                                    <div class="input-group">
+                                        <input type="text" name="sensor_secret" class="form-control"
+                                               value="{{ boat.sensor_secret or '' }}"
+                                               placeholder="Secret for ESP / Raspberry">
+                                        <button type="submit" class="btn btn-outline-primary">Save Secret</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="mb-3">
+                                <label class="form-label">{{ get_text('notes', session.get('language', 'en')) }}</label>
+                                <form method="POST" action="{{ url_for('update_boat_notes') }}">
+                                    <input type="hidden" name="boat_id" value="{{ boat.id }}">
+                                    <textarea name="notes" class="form-control" rows="3">{{ boat.notes or '' }}</textarea>
+                                    <button type="submit" class="btn btn-primary btn-sm mt-2">
+                                        {{ get_text('save_notes', session.get('language', 'en')) }}
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Public Access -->
+                            <div class="mb-3">
+                                <form method="POST" action="{{ url_for('toggle_public', boat_id=boat.id) }}">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="public_{{ boat.id }}"
+                                               {% if boat.is_public %}checked{% endif %} disabled>
+                                        <label class="form-check-label" for="public_{{ boat.id }}">
+                                            Public access
+                                            {% if boat.is_public %}
+                                            <span class="badge bg-warning text-dark ms-2">Enabled</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary ms-2">Disabled</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm {% if boat.is_public %}btn-warning{% else %}btn-outline-success{% endif %}">
+                                        {% if boat.is_public %}Disable Public{% else %}Enable Public{% endif %}
+                                    </button>
+                                </form>
+                                {% if boat.is_public and boat.public_slug %}
+                                <div class="mt-2">
+                                    <small class="text-muted">Public journal URL:</small><br>
+                                    <code class="small">{{ request.host_url }}{{ boat.public_slug }}/journal</code>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                                            onclick="navigator.clipboard.writeText('{{ request.host_url }}{{ boat.public_slug }}/journal')">
+                                        Copy
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Assign User -->
+                            <form method="POST" action="{{ url_for('assign_user_to_boat') }}" class="row g-2 mb-3">
+                                <input type="hidden" name="boat_id" value="{{ boat.id }}">
+                                <div class="col-md-8">
+                                    <select name="user_id" class="form-select">
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-outline-primary w-100">
+                                        {{ get_text('assign_user', session.get('language', 'en')) }}
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Assigned Users -->
+                            {% set assigned = boat_users.get(boat.id, []) %}
+                            {% if assigned %}
+                            <div class="mt-3">
+                                <div class="text-muted small mb-2">{{ get_text('assigned_users', session.get('language', 'en')) }}</div>
+                                {% for user in assigned %}
+                                <div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-2">
+                                    <span>{{ user.username }}</span>
+                                    <form method="POST" action="{{ url_for('unassign_user_from_boat') }}" class="d-inline">
+                                        <input type="hidden" name="boat_id" value="{{ boat.id }}">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                onclick="return confirm('{{ get_text('remove_user_confirm', session.get('language', 'en')) }} {{ user.username }}?')">
+                                            {{ get_text('remove', session.get('language', 'en')) }}
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="mt-2 text-muted small">{{ get_text('no_users_assigned', session.get('language', 'en')) }}</div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+            <i class="bi bi-people me-1"></i> {{ get_text('manage_all_users', session.get('language', 'en')) }}
+        </a>
+    </div>
+</div>
+{% endblock %}

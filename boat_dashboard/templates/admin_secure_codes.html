@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('secure_codes', session.get('language', 'en')) }}</h2>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="POST" class="d-flex justify-content-between align-items-center gap-3">
+                <input type="hidden" name="action" value="toggle_secure">
+                <div>
+                    <div class="fw-semibold">{{ get_text('secure_login', session.get('language', 'en')) }}</div>
+                    <div class="text-muted small">{{ get_text('secure_login_help', session.get('language', 'en')) }}</div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           name="secure_login" value="1" id="secureLoginSwitch"
+                           {% if secure_login %}checked{% endif %}
+                           onchange="this.form.submit()">
+                    <label class="form-check-label" for="secureLoginSwitch">
+                        {% if secure_login %}{{ get_text('enabled', session.get('language', 'en')) }}{% else %}{{ get_text('disabled', session.get('language', 'en')) }}{% endif %}
+                    </label>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_new_code', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-2">
+                <input type="hidden" name="action" value="add">
+                <div class="col-md-4">
+                    <input type="text" name="code" class="form-control"
+                           placeholder="{{ get_text('code', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" name="description" class="form-control"
+                           placeholder="{{ get_text('description_optional', session.get('language', 'en')) }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        {{ get_text('add', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('existing_codes', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">{{ get_text('code', session.get('language', 'en')) }}</th>
+                        <th>{{ get_text('description', session.get('language', 'en')) }}</th>
+                        <th>{{ get_text('created', session.get('language', 'en')) }}</th>
+                        <th class="text-end pe-4">{{ get_text('actions', session.get('language', 'en')) }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in codes %}
+                    <tr>
+                        <td class="ps-4"><code>{{ c.code }}</code></td>
+                        <td>{{ c.description or '—' }}</td>
+                        <td>{{ c.created_at[:10] }}</td>
+                        <td class="text-end pe-4">
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="code_id" value="{{ c.id }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('{{ get_text('delete_code_confirm', session.get('language', 'en')) }}')">
+                                    {{ get_text('delete', session.get('language', 'en')) }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            {{ get_text('no_codes_yet', session.get('language', 'en')) }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

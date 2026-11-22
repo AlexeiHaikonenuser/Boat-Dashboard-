@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">🚤 {{ get_text('start_new_trip', session.get('language', 'en')) }}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('trip_title', session.get('language', 'en')) }}</label>
+                    <input type="text" name="title" class="form-control" 
+                           placeholder="{{ get_text('evening_cruise_example', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('start_location', session.get('language', 'en')) }}</label>
+                    <input type="text" name="start_location" class="form-control" 
+                           placeholder="{{ get_text('helsinki_marina_example', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('destination', session.get('language', 'en')) }}</label>
+                    <input type="text" name="finish_location" class="form-control" 
+                           placeholder="{{ get_text('open_sea_example', session.get('language', 'en')) }}" required>
+                </div>
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    {{ get_text('start_trip', session.get('language', 'en')) }}
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">
+        ← {{ get_text('cancel', session.get('language', 'en')) }}
+    </a>
+</div>
+{% endblock %}

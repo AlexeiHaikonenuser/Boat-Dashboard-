@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('manage_notifications', session.get('language', 'en')) }}</h2>
+
+    <!-- Add New Notification -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('create_new_notification', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('notification_title', session.get('language', 'en')) }}</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('notification_message', session.get('language', 'en')) }}</label>
+                    <textarea name="message" class="form-control" rows="4" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('notification_image', session.get('language', 'en')) }}</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    {{ get_text('publish_notification', session.get('language', 'en')) }}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Notifications -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('active_notifications', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            {% if notifications %}
+                {% for n in notifications %}
+                <div class="border-bottom pb-3 mb-3">
+                    <h6 class="fw-bold">{{ n['title'] }}</h6>
+                    <p class="mb-2">{{ n['message'] }}</p>
+                    {% if n['image_path'] %}
+                        <img src="/static/{{ n['image_path'] }}" class="img-fluid rounded mb-2" style="max-height: 200px;">
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('delete_notification', nid=n['id']) }}" class="d-inline"
+                          onsubmit="return confirm('{{ get_text('delete_confirm', session.get('language', 'en')) }}')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i> {{ get_text('delete', session.get('language', 'en')) }}
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">{{ get_text('no_notifications_yet', session.get('language', 'en')) }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

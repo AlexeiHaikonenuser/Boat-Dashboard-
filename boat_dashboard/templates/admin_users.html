@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('user_management_admin', session.get('language', 'en')) }}</h2>
+
+    <!-- Add New User -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_new_user', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_user') }}" class="row g-2">
+                <div class="col-md-4">
+                    <input type="text" name="username" class="form-control"
+                           placeholder="{{ get_text('username', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="password" name="password" class="form-control"
+                           placeholder="{{ get_text('password', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-4">
+                    <select name="role" class="form-select">
+                        <option value="user">{{ get_text('visitor', session.get('language', 'en')) }}</option>
+                        <option value="admin">{{ get_text('admin', session.get('language', 'en')) }}</option>
+                    </select>
+                </div>
+                <div class="col-12 mt-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        {{ get_text('create_user', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('existing_users', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">{{ get_text('username', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('role', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('notes', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('created', session.get('language', 'en')) }}</th>
+                            <th class="text-end pe-4">{{ get_text('actions', session.get('language', 'en')) }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="ps-4"><strong>{{ user.username }}</strong></td>
+                            <td>
+                                <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ user.role|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ user.notes|truncate(60) if user.notes else '—' }}
+                                </small>
+                            </td>
+                            <td>{{ user.created_at[:10] }}</td>
+                            <td class="text-end pe-4">
+                                {% if user.username != 'admin' %}
+                                    <a href="{{ url_for('edit_user', user_id=user.id) }}"
+                                       class="btn btn-outline-primary btn-sm me-1">
+                                        <i class="bi bi-pencil me-1"></i> {{ get_text('edit', session.get('language', 'en')) }}
+                                    </a>
+                                    <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('{{ get_text('delete_user_confirm', session.get('language', 'en')) }} {{ user.username }}?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash me-1"></i> {{ get_text('delete', session.get('language', 'en')) }}
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted small">{{ get_text('main_admin', session.get('language', 'en')) }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

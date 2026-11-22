@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4">{{ get_text('service_maintenance', session.get('language', 'en')) }}</h2>
+
+    <!-- Current Motor Hours -->
+    <div class="card border-0 shadow-sm mb-4 text-center">
+        <div class="card-body py-4">
+            <div class="text-muted small">{{ get_text('current_motor_hours', session.get('language', 'en')) }}</div>
+            <div class="display-5 fw-bold text-primary">{{ current_hours }} <small class="fs-5">h</small></div>
+        </div>
+    </div>
+
+    <!-- Add New Service Type -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('add_new_service_type', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_service_type') }}" class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <input type="text" name="name" class="form-control"
+                           placeholder="{{ get_text('service_name_placeholder', session.get('language', 'en')) }}" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" name="interval" class="form-control"
+                           placeholder="{{ get_text('interval_hours', session.get('language', 'en')) }}" min="1">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        {{ get_text('add_service_type', session.get('language', 'en')) }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Service Types List -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('service_types', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body">
+            {% if services %}
+                {% for service in services %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>{{ service['name'] }}</strong>
+                            {% if service['interval_hours'] %}
+                                <span class="text-muted small ms-2">{{ get_text('every', session.get('language', 'en')) }} {{ service['interval_hours'] }} {{ get_text('hours', session.get('language', 'en')) }}</span>
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('delete_service_type', sid=service.id) }}"
+                              class="d-inline" onsubmit="return confirm('{{ get_text('delete_service_type_confirm', session.get('language', 'en')) }}')">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <form method="POST" action="{{ url_for('do_service', sid=service.id) }}">
+                        <div class="row g-2 align-items-center">
+                            <div class="col">
+                                <input type="text" name="notes" class="form-control form-control-sm"
+                                       placeholder="{{ get_text('notes', session.get('language', 'en')) }}...">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    {{ get_text('mark_done', session.get('language', 'en')) }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center py-4">{{ get_text('no_service_types_yet', session.get('language', 'en')) }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Maintenance History -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-3">
+            <h6 class="mb-0">{{ get_text('maintenance_history', session.get('language', 'en')) }}</h6>
+        </div>
+        <div class="card-body p-0">
+            {% if history %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">{{ get_text('date', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('service', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('motor_hours', session.get('language', 'en')) }}</th>
+                            <th>{{ get_text('notes', session.get('language', 'en')) }}</th>
+                            <th class="text-end pe-4">{{ get_text('actions', session.get('language', 'en')) }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td class="ps-4">{{ entry.done_at | ddmmyyyy }}</td>
+                            <td><strong>{{ entry.service_type }}</strong></td>
+                            <td><span class="badge bg-primary-subtle text-primary">{{ entry.motor_hours_at_service|round(1) }} h</span></td>
+                            <td class="text-muted small">{{ entry.notes or '—' }}</td>
+                            <td class="text-end pe-4">
+                                <form method="POST" action="{{ url_for('delete_maintenance_history', hid=entry.id) }}"
+                                      class="d-inline" onsubmit="return confirm('{{ get_text('delete_maintenance_confirm', session.get('language', 'en')) }}')">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-center text-muted py-4">{{ get_text('no_maintenance_yet', session.get('language', 'en')) }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

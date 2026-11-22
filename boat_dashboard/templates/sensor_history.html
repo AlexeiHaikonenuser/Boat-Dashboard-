@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">📊 {{ get_text('sensor_history', session.get('language', 'en')) }}</h2>
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr>
+                <th>{{ get_text('date_time', session.get('language', 'en')) }}</th>
+                <th>{{ get_text('temperature', session.get('language', 'en')) }}</th>
+                <th>{{ get_text('humidity', session.get('language', 'en')) }}</th>
+                <th>{{ get_text('bilge_level', session.get('language', 'en')) }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in readings %}
+            <tr>
+                <td>{{ r.timestamp | ddmmyyyy }} {{ r.timestamp[11:16] }}</td>
+                <td class="text-warning">{{ r.temperature | round(1) if r.temperature is not none else '—' }} °C</td>
+                <td class="text-info">{{ r.humidity | round(1) if r.humidity is not none else '—' }} %</td>
+                <td class="text-primary">{{ r.bilge_level | round(1) if r.bilge_level is not none else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">{{ get_text('no_sensor_data', session.get('language', 'en')) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← {{ get_text('back_to_dashboard', session.get('language', 'en')) }}</a>
+</div>
+{% endblock %}

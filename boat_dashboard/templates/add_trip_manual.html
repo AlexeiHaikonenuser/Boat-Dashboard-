@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <h2 class="fw-bold mb-4">{{ get_text('add_new_trip', session.get('language', 'en')) }}</h2>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('trip_title', session.get('language', 'en')) }}</label>
+                    <input type="text" name="title" class="form-control" required>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('start_location', session.get('language', 'en')) }}</label>
+                        <input type="text" name="start_location" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('finish_location', session.get('language', 'en')) }}</label>
+                        <input type="text" name="finish_location" class="form-control">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('start_time', session.get('language', 'en')) }}</label>
+                        <input type="datetime-local" name="start_time" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('end_time', session.get('language', 'en')) }}</label>
+                        <input type="datetime-local" name="end_time" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">{{ get_text('notes', session.get('language', 'en')) }}</label>
+                    <textarea name="notes" class="form-control" rows="5"></textarea>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">{{ get_text('images', session.get('language', 'en')) }}</label>
+                    <input type="file" name="images" class="form-control" multiple accept="image/*">
+                </div>
+
+                <div class="mt-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_public" id="is_public" value="1">
+                        <label class="form-check-label" for="is_public">
+                            {{ get_text('make_public', session.get('language', 'en')) }}
+                        </label>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="allow_comments" id="allow_comments" value="1">
+                        <label class="form-check-label" for="allow_comments">
+                            {{ get_text('allow_comments', session.get('language', 'en')) }}
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-4">
+                    {{ get_text('save', session.get('language', 'en')) }}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <a href="{{ url_for('journal') }}" class="btn btn-outline-secondary mt-3">
+        ← {{ get_text('back', session.get('language', 'en')) }}
+    </a>
+</div>
+{% endblock %}

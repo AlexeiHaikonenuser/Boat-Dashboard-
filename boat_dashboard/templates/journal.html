@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5" style="max-width: 820px;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="fw-bold mb-1">{{ journal_title or 'Journal' }}</h1>
+            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editJournalNameModal">
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <!-- Public toggle -->
+            <form method="POST" action="{{ url_for('toggle_journal_public') }}" class="d-inline">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="journalPublicSwitch"
+                           {% if is_public_journal %}checked{% endif %}
+                           onchange="this.form.submit()">
+                    <label class="form-check-label" for="journalPublicSwitch">
+                        {% if is_public_journal %}Public{% else %}Private{% endif %}
+                    </label>
+                </div>
+            </form>
+            <a href="{{ url_for('add_trip_manual') }}" class="btn btn-primary">
+                {{ get_text('new_entry', session.get('language', 'en')) }}
+            </a>
+        </div>
+    </div>
+	<!-- Public Link -->
+{% if is_public_journal %}
+<div class="alert alert-light border d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <strong>{{ get_text('public_link', session.get('language', 'en')) }}:</strong>
+        <a href="/{{ boat_name | replace(' ', '-') | lower }}/journal" target="_blank">
+            {{ request.host_url }}{{ boat_name | replace(' ', '-') | lower }}/journal
+        </a>
+    </div>
+    <button class="btn btn-sm btn-outline-secondary"
+            onclick="navigator.clipboard.writeText('{{ request.host_url }}{{ boat_name | replace(' ', '-') | lower }}/journal')">
+        {{ get_text('copy', session.get('language', 'en')) }}
+    </button>
+</div>
+{% endif %}
+
+    {% for trip in trips %}
+
+
+<article class="border-bottom py-4">
+    <div class="row g-4 align-items-center">
+        <div class="col-md-7">
+            <div class="text-muted small mb-1">
+                {{ trip.start_time | ddmmyyyy }}
+                {% if trip.duration_hours %} · {{ trip.duration_hours|round(1) }} h{% endif %}
+                {% if trip.is_public %}
+                    <span class="badge bg-success ms-1">{{ get_text('public', session.get('language', 'en')) }}</span>
+                {% endif %}
+            </div>
+            <h3 class="mb-2">
+                <a href="{{ url_for('journal_post', trip_id=trip.id) }}" class="text-dark text-decoration-none">
+                    {{ trip.title or get_text('untitled', session.get('language', 'en')) }}
+                </a>
+            </h3>
+            {% if trip.notes %}
+            <p class="text-muted mb-0" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                {{ trip.notes }}
+            </p>
+            {% endif %}
+            <div class="mt-3 d-flex gap-2">
+                <a href="{{ url_for('journal_post', trip_id=trip.id) }}" class="text-decoration-none">
+                    {{ get_text('read_more', session.get('language', 'en')) }} →
+                </a>
+                <form method="POST" action="{{ url_for('delete_trip', trip_id=trip.id) }}" class="d-inline"
+                      onsubmit="return confirm('{{ get_text('delete_trip_confirm', session.get('language', 'en')) }}')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        🗑 {{ get_text('delete', session.get('language', 'en')) }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% if trip.images %}
+        <div class="col-md-5">
+            <img src="/static/{{ trip.images[0].image_path }}" class="img-fluid rounded" style="aspect-ratio: 4/3; object-fit: cover;">
+        </div>
+        {% endif %}
+    </div>
+</article>    {% else %}
+    <div class="text-center py-5 text-muted">
+        <h4>{{ get_text('no_entries_yet', session.get('language', 'en')) }}</h4>
+        <a href="{{ url_for('add_trip_manual') }}" class="btn btn-primary mt-3">
+            {{ get_text('create_first_entry', session.get('language', 'en')) }}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Edit Journal Name Modal -->
+<div class="modal fade" id="editJournalNameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit journal name</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_journal_title') }}">
+                <div class="modal-body">
+                    <input type="text" name="journal_title" class="form-control" value="{{ journal_title or 'Journal' }}" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

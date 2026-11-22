@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.gallery-thumb:hover .thumb-delete {
+    opacity: 1 !important;
+}
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">{{ get_text('trip_history', session.get('language', 'en')) }}</h2>
+        <a href="{{ url_for('add_trip_manual') }}" class="btn btn-primary btn-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> {{ get_text('add_new_trip', session.get('language', 'en')) }}
+        </a>
+    </div>
+
+    {% if trips %}
+        <div class="accordion" id="historyAccordion">
+            {% for trip in trips %}
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-3 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed bg-white" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#trip{{ trip.id }}">
+                        <div class="d-flex align-items-center w-100">
+                            <strong class="me-3">{{ trip.title or get_text('manual_trip', session.get('language', 'en')) }}</strong>
+                            <span class="badge bg-primary-subtle text-primary ms-auto me-3">{{ trip.duration_hours|round(1) }} h</span>
+                            <small class="text-muted">{{ trip.start_time | ddmmyyyy }}</small>
+                        </div>
+                    </button>
+                </h2>
+                <div id="trip{{ trip.id }}" class="accordion-collapse collapse" data-bs-parent="#historyAccordion">
+                    <div class="accordion-body bg-white">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="text-muted small">{{ get_text('from', session.get('language', 'en')) }}</div>
+                                <div>{{ trip.start_location or '—' }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-muted small">{{ get_text('to', session.get('language', 'en')) }}</div>
+                                <div>{{ trip.finish_location or '—' }}</div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="text-muted small">{{ get_text('date', session.get('language', 'en')) }}</div>
+                                <div>{{ trip.start_time | ddmmyyyy }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="text-muted small">{{ get_text('duration', session.get('language', 'en')) }}</div>
+                                <div>{{ trip.duration_hours|round(2) }} {{ get_text('hours', session.get('language', 'en')) }}</div>
+                            </div>
+                        </div>
+
+                        {% if trip.passengers %}
+                        <div class="mb-3">
+                            <div class="text-muted small">{{ get_text('passengers', session.get('language', 'en')) }}</div>
+                            <div>{{ trip.passengers|map(attribute="name")|join(", ") }}</div>
+                        </div>
+                        {% endif %}
+
+                        {% if trip.notes %}
+                        <div class="mb-3">
+                            <div class="text-muted small">{{ get_text('notes', session.get('language', 'en')) }}</div>
+                            <div>{{ trip.notes }}</div>
+                        </div>
+                        {% endif %}
+
+			{% if trip_images.get(trip.id) %}
+<div class="mb-3">
+    <div class="text-muted small mb-2">{{ get_text('trip_images', session.get('language', 'en')) }}</div>
+    <div class="d-flex flex-wrap gap-2">
+        {% for img in trip_images.get(trip.id, []) %}
+        <div class="position-relative gallery-thumb" style="width: 140px;">
+            <img src="/static/{{ img.image_path }}"
+                 class="rounded"
+                 style="height: 100px; width: 140px; object-fit: cover; cursor: pointer;"
+                 onclick="showFullImage('/static/{{ img.image_path }}')">
+            <form method="POST" action="{{ url_for('delete_trip_image', image_id=img.id) }}"
+                  class="position-absolute top-0 end-0 m-1 opacity-0 thumb-delete"
+                  onsubmit="return confirm('Delete this image?')">
+                <button type="submit" class="btn btn-dark btn-sm rounded-circle p-0" 
+                        style="width:22px; height:22px; line-height:1; font-size:12px; opacity:0.85;">
+                    <i class="bi bi-x"></i>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<form method="POST" action="/trip/{{ trip.id }}/set_public">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="is_public" value="1"
+               {% if trip.is_public %}checked{% endif %}>
+        <label class="form-check-label">Share post</label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm mt-2">Save</button>
+</form>
+
+    <form method="POST" action="{{ url_for('toggle_trip_comments', trip_id=trip.id) }}" class="d-inline ms-4">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox"
+                   onchange="this.form.submit()"
+                   {% if trip.allow_comments %}checked{% endif %}>
+            <label class="form-check-label">{{ get_text('allow_comments', session.get('language', 'en')) }}</label>
+        </div>
+    </form>
+</div>
+
+
+                        <div class="d-flex gap-2 mt-4">
+                            <a href="{{ url_for('edit_trip', trip_id=trip.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil me-1"></i> {{ get_text('edit_trip', session.get('language', 'en')) }}
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_trip', trip_id=trip.id) }}" class="d-inline"
+                                  onsubmit="return confirm('{{ get_text('delete_trip_confirm', session.get('language', 'en')) }}')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash me-1"></i> {{ get_text('delete_trip', session.get('language', 'en')) }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-journal-text display-1 text-muted"></i>
+            <h4 class="mt-3 text-muted">{{ get_text('no_trips_yet', session.get('language', 'en')) }}</h4>
+            <a href="{{ url_for('add_trip_manual') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-lg me-1"></i> {{ get_text('add_your_first_trip', session.get('language', 'en')) }}
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Full Image Modal -->
+<div class="modal fade" id="fullImageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark border-0">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-2 pt-0 text-center">
+                <img id="fullImage" src="" class="img-fluid rounded" style="max-height: 80vh;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFullImage(src) {
+    document.getElementById('fullImage').src = src;
+    new bootstrap.Modal(document.getElementById('fullImageModal')).show();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold text-center mb-4">{{ get_text('select_boat', session.get('language', 'en')) }}</h2>
+
+    {% if boats %}
+    <div class="row g-4 justify-content-center">
+        {% for boat in boats %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <h5 class="fw-bold mb-2">{{ boat.name }}</h5>
+                    <p class="text-muted small mb-4">
+                        {{ get_text('captain', session.get('language', 'en')) }}: {{ boat.captain or '—' }}
+                    </p>
+                    <a href="{{ url_for('switch_boat', boat_id=boat.id) }}"
+                       class="btn btn-primary w-100">
+                        {{ get_text('open_dashboard', session.get('language', 'en')) }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <h5 class="mb-2">{{ get_text('no_boats_assigned', session.get('language', 'en')) }}</h5>
+        <p class="text-muted">{{ get_text('contact_administrator', session.get('language', 'en')) }}</p>
+    </div>
+    {% endif %}
+
+    {% if session.role == 'admin' %}
+    <div class="text-center mt-5">
+        <a href="{{ url_for('admin_boats') }}" class="btn btn-outline-primary">
+            {{ get_text('manage_boats', session.get('language', 'en')) }}
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

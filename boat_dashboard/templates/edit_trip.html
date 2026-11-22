@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <h2 class="fw-bold mb-4">{{ get_text('edit_trip', session.get('language', 'en')) }}</h2>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="POST" enctype="multipart/form-data">
+
+                <div class="mb-3">
+                    <label class="form-label">{{ get_text('trip_title', session.get('language', 'en')) }}</label>
+                    <input type="text" name="title" class="form-control" value="{{ trip.title }}" required>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('start_location', session.get('language', 'en')) }}</label>
+                        <input type="text" name="start_location" class="form-control" value="{{ trip.start_location }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ get_text('finish_location', session.get('language', 'en')) }}</label>
+                        <input type="text" name="finish_location" class="form-control" value="{{ trip.finish_location }}">
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">{{ get_text('notes', session.get('language', 'en')) }}</label>
+                    <textarea name="notes" class="form-control" rows="5">{{ trip.notes }}</textarea>
+                </div>
+
+                <!-- Existing images -->
+                {% if images %}
+                <div class="mt-4">
+                    <label class="form-label">{{ get_text('images', session.get('language', 'en')) }}</label>
+                    {% for img in images %}
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="/static/{{ img.image_path }}" style="width:70px;height:70px;object-fit:cover;" class="rounded me-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="delete_images" value="{{ img.id }}" id="del{{ img.id }}">
+                            <label class="form-check-label" for="del{{ img.id }}">
+                                {{ get_text('delete', session.get('language', 'en')) }}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Add new images -->
+                <div class="mt-3">
+                    <label class="form-label">{{ get_text('add_more_images', session.get('language', 'en')) }}</label>
+                    <input type="file" name="images" class="form-control" multiple accept="image/*">
+                </div>
+
+
+                <button type="submit" class="btn btn-primary w-100 mt-4">
+                    {{ get_text('save_changes', session.get('language', 'en')) }}
+                </button>
+
+            </form>
+        </div>
+    </div>
+
+    <a href="{{ url_for('journal_post', trip_id=trip.id) }}" class="btn btn-outline-secondary mt-3">
+        ← {{ get_text('back', session.get('language', 'en')) }}
+    </a>
+</div>
+{% endblock %}

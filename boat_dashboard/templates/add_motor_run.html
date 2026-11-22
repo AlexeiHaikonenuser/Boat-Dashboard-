@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>➕ {{ get_text('add_manual_motor_run', session.get('language', 'en')) }}</h2>
+        <a href="{{ url_for('motor_history') }}" class="btn btn-secondary">
+            ← {{ get_text('back_to_history', session.get('language', 'en')) }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-light">{{ get_text('start_time', session.get('language', 'en')) }}</label>
+                        <input type="datetime-local" name="start_time" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-light">{{ get_text('end_time', session.get('language', 'en')) }}</label>
+                        <input type="datetime-local" name="end_time" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-light">{{ get_text('notes_description', session.get('language', 'en')) }}</label>
+                        <textarea name="notes" class="form-control" rows="4"
+                                  placeholder="{{ get_text('motor_run_notes_placeholder', session.get('language', 'en')) }}"></textarea>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            💾 {{ get_text('save_motor_run', session.get('language', 'en')) }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
