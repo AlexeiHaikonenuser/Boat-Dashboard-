@@ -1,0 +1,152 @@
+Boat Dashboard — systemd service and Nginx
+==========================================
+
+These steps assume the project is already in:
+
+    /opt/boat_dashboard
+
+and that Python packages are installed in:
+
+    /opt/boat_dashboard/venv
+
+If the virtual environment is not there yet:
+
+    cd /opt/boat_dashboard
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    pip install gunicorn
+
+Do not use "python app.py" on a public server. That starts Flask's
+development server with debug mode on. The service below uses gunicorn.
+
+
+1. Let the web user write the databases and uploads
+---------------------------------------------------
+
+    sudo chown -R www-data:www-data /opt/boat_dashboard
+    sudo mkdir -p /opt/boat_dashboard/boats /opt/boat_dashboard/logs /opt/boat_dashboard/static/uploads
+    sudo chown -R www-data:www-data /opt/boat_dashboard
+
+
+2. Create the systemd service
+-----------------------------
+
+Create the file:
+
+    sudo nano /etc/systemd/system/boat_dashboard.service
+
+Paste this:
+
+    [Unit]
+    Description=Boat Dashboard
+    After=network.target
+
+    [Service]
+    User=www-data
+    Group=www-data
+    WorkingDirectory=/opt/boat_dashboard
+    Environment=SECRET_KEY=replace-this-with-a-long-random-string
+    ExecStart=/opt/boat_dashboard/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 app:app
+    Restart=on-failure
+    RestartSec=5
+
+    [Install]
+    WantedBy=multi-user.target
+
+Replace SECRET_KEY with a long random string. Do not leave the example text.
+
+Enable and start it:
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable boat_dashboard.service
+    sudo systemctl start boat_dashboard.service
+    sudo systemctl status boat_dashboard.service
+
+Useful commands later:
+
+    sudo systemctl restart boat_dashboard.service
+    sudo journalctl -u boat_dashboard.service -n 50 --no-pager
+
+The app then listens only on this address, which Nginx can reach:
+
+    http://127.0.0.1:5000
+
+It is not open to the internet directly.
+
+
+3. Nginx site
+-------------
+
+Install Nginx if it is not installed:
+
+    sudo apt update
+    sudo apt install nginx
+
+Create the site file:
+
+    sudo nano /etc/nginx/sites-available/boat_dashboard
+
+Paste this. Change example.com to your domain name.
+
+    server {
+        listen 80;
+        server_name example.com;
+
+        client_max_body_size 25m;
+
+        location / {
+            proxy_pass http://127.0.0.1:5000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 60s;
+        }
+    }
+
+The 25m limit matches the upload limit in the app.
+
+Enable the site and reload Nginx:
+
+    sudo ln -s /etc/nginx/sites-available/boat_dashboard /etc/nginx/sites-enabled/boat_dashboard
+    sudo nginx -t
+    sudo systemctl enable nginx
+    sudo systemctl reload nginx
+
+Open http://example.com in a browser.
+
+
+4. HTTPS
+--------
+
+After the site works over HTTP, add a certificate:
+
+    sudo apt install certbot python3-certbot-nginx
+    sudo certbot --nginx -d example.com
+
+Certbot changes the Nginx file so the site also listens on port 443.
+
+In /opt/boat_dashboard/app.py this line must stay True when the site
+is served with HTTPS:
+
+    app.config['SESSION_COOKIE_SECURE'] = True
+
+If you test only on http://localhost or plain HTTP, set it to False.
+Otherwise the browser will not keep the login cookie and the login
+page reloads without signing you in.
+
+After any change to app.py:
+
+    sudo systemctl restart boat_dashboard.service
+
+
+5. Check
+--------
+
+    sudo systemctl status boat_dashboard.service
+    curl -I http://127.0.0.1:5000
+    curl -I http://example.com
+
+A working check returns a line starting with HTTP/1.1 302 or HTTP/1.1 200.
+302 is normal: the app sends a visitor to the login page.
